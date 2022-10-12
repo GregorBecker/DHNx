@@ -24,7 +24,7 @@ from pyomo.environ import Set
 from pyomo.environ import Var
 
 
-class Label(namedtuple('solph_label', ['tag1', 'tag2', 'tag3', 'tag4'])):
+class Label(namedtuple('solph_label', ['tag1', 'tag2', 'tag3', 'tag4', 'tag5'])):
     __slots__ = ()
 
     def __str__(self):

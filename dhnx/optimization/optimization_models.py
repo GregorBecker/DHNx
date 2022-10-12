@@ -83,7 +83,7 @@ class OemofInvestOptimizationModel(InvestOptimizationModel):
         Calls *check_input()*, *complete_exist_data()*, *get_pipe_data()*, and *setup_oemof_es()*.
 
     """
-    def __init__(self, thermal_network, settings, investment_options):
+    def __init__(self, thermal_network, settings, investment_options, label_5):
 
         self.settings = settings
         self.invest_options = investment_options
@@ -91,6 +91,7 @@ class OemofInvestOptimizationModel(InvestOptimizationModel):
         self.buses = {}  # dict of all buses
         self.es = solph.EnergySystem()
         self.om = None
+        self.label_5 = label_5
 
         # list of possible oemof flow attributes, e.g. for producers source
         self.oemof_flow_attr = {'nominal_value', 'min', 'max',
@@ -349,13 +350,13 @@ class OemofInvestOptimizationModel(InvestOptimizationModel):
         # add houses and generation
         for typ in ['consumers', 'producers']:
             self.nodes, self.buses = add_nodes_houses(
-                self, self.nodes, self.buses, typ)
+                self, self.nodes, self.buses, typ, self.label_5)
 
         logging.info('Producers, Consumers Nodes appended.')
 
         # add heating infrastructure
         self.nodes, self.buses = add_nodes_dhs(self, self.settings, self.nodes,
-                                               self.buses)
+                                               self.buses, self.label_5)
         logging.info('DHS Nodes appended.')
 
         # add nodes and flows to energy system
@@ -664,7 +665,7 @@ def setup_optimise_investment(
         time_res=1, start_date='1/1/2018', frequence='H', solver='cbc',
         solve_kw=None, solver_cmdline_options=None, simultaneity=1,
         bidirectional_pipes=False, dump_path=None, dump_name='dump.oemof',
-        print_logging_info=False, write_lp_file=False):
+        print_logging_info=False, write_lp_file=False, label_5=''):
     """
     Function for setting up the oemof solph operational Model.
 
@@ -734,7 +735,7 @@ def setup_optimise_investment(
         'write_lp_file': write_lp_file,
     }
 
-    model = OemofInvestOptimizationModel(thermal_network, settings, invest_options)
+    model = OemofInvestOptimizationModel(thermal_network, settings, invest_options, label_5)
 
     return model
 

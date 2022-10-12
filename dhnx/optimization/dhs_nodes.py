@@ -18,7 +18,7 @@ import dhnx.optimization.add_components as ac
 import dhnx.optimization.oemof_heatpipe as oh
 
 
-def add_nodes_dhs(opti_network, gd, nodes, busd):
+def add_nodes_dhs(opti_network, gd, nodes, busd, label_5):
     """
     Based on the *forks* and *pipes* of the *ThermalNetwork* of the
     *OemofInvestOptimisationModel*, the oemof-solph components for the district heating
@@ -53,12 +53,13 @@ def add_nodes_dhs(opti_network, gd, nodes, busd):
 
     d_labels['l_2'] = 'heat'
     d_labels['l_3'] = 'bus'
+    d_labels['l_5'] = label_5
 
     for n, _ in opti_network.thermal_network.components['forks'].iterrows():
         d_labels['l_4'] = 'forks-' + str(n)
         d_labels['l_1'] = 'infrastructure'
         l_bus = oh.Label(d_labels['l_1'], d_labels['l_2'], d_labels['l_3'],
-                         d_labels['l_4'])
+                         d_labels['l_4'], d_labels['l_5'])
         bus = solph.Bus(label=l_bus)
         nodes.append(bus)
         busd[l_bus] = bus
@@ -138,8 +139,8 @@ def add_nodes_dhs(opti_network, gd, nodes, busd):
 
                 start = q['from_node']
                 end = q['to_node']
-                b_in = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', start)]
-                b_out = busd[('consumers', d_labels['l_2'], 'bus', end)]
+                b_in = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', start, d_labels['l_5'])]
+                b_out = busd[('consumers', d_labels['l_2'], 'bus', end, d_labels['l_5'])]
 
                 d_labels['l_4'] = start + '-' + end
 
@@ -156,8 +157,8 @@ def add_nodes_dhs(opti_network, gd, nodes, busd):
 
                 start = q['to_node']
                 end = q['from_node']
-                b_in = busd[('producers', d_labels['l_2'], 'bus', start)]
-                b_out = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', end)]
+                b_in = busd[('producers', d_labels['l_2'], 'bus', start, d_labels['l_5'])]
+                b_out = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', end, d_labels['l_5'])]
 
                 d_labels['l_4'] = start + '-' + end
 
@@ -170,8 +171,8 @@ def add_nodes_dhs(opti_network, gd, nodes, busd):
 
                 start = q['from_node']
                 end = q['to_node']
-                b_in = busd[('producers', d_labels['l_2'], 'bus', start)]
-                b_out = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', end)]
+                b_in = busd[('producers', d_labels['l_2'], 'bus', start, d_labels['l_5'])]
+                b_out = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', end, d_labels['l_5'])]
 
                 d_labels['l_4'] = start + '-' + end
 
@@ -183,8 +184,8 @@ def add_nodes_dhs(opti_network, gd, nodes, busd):
             elif (q['from_node'].split('-')[0] == 'forks') and (
                     q['to_node'].split('-')[0] == 'forks'):
 
-                b_in = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', q['from_node'])]
-                b_out = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', q['to_node'])]
+                b_in = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', q['from_node'], d_labels['l_5'])]
+                b_out = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', q['to_node'], d_labels['l_5'])]
                 d_labels['l_4'] = q['from_node'] + '-' + q['to_node']
 
                 nodes = ac.add_heatpipes(
@@ -194,8 +195,8 @@ def add_nodes_dhs(opti_network, gd, nodes, busd):
                     # the heatpipes from fork to fork need to be created in
                     # both directions in this case bidiretional = False
                     b_in = busd[(
-                        d_labels['l_1'], d_labels['l_2'], 'bus', q['to_node'])]
-                    b_out = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', q['from_node'])]
+                        d_labels['l_1'], d_labels['l_2'], 'bus', q['to_node'], d_labels['l_5'])]
+                    b_out = busd[(d_labels['l_1'], d_labels['l_2'], 'bus', q['from_node'], d_labels['l_5'])]
                     d_labels['l_4'] = q['to_node'] + '-' + q['from_node']
 
                     nodes = ac.add_heatpipes(
@@ -209,7 +210,7 @@ def add_nodes_dhs(opti_network, gd, nodes, busd):
     return nodes, busd
 
 
-def add_nodes_houses(opti_network, nodes, busd, label_1):
+def add_nodes_houses(opti_network, nodes, busd, label_1, label_5):
     """
     For each *consumers*/*producers* of the *ThermalNetwork* of the
     *OemofInvestOptimisationModel*, the oemof-solph components for the *consumers*/*producers*
@@ -259,7 +260,7 @@ def add_nodes_houses(opti_network, nodes, busd, label_1):
         # heat bus is always necessary
         d_labels['l_1'] = label_1
         d_labels['l_4'] = label_1 + '-' + str(r)
-
+        d_labels['l_5'] = label_5
         # add buses first, because other classes need to have them already
         nodes, busd = ac.add_buses(gen_data['bus'],
                                    d_labels, nodes, busd)

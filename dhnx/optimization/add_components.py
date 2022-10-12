@@ -55,7 +55,8 @@ def add_buses(it, labels, nodes, busd):
 
         labels['l_3'] = 'bus'
         labels['l_2'] = b['label_2']
-        l_bus = oh.Label(labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'])
+        # TODO add 5th label
+        l_bus = oh.Label(labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5'])
 
         # check if bus already exists (due to infrastructure)
         if l_bus in busd:
@@ -71,14 +72,14 @@ def add_buses(it, labels, nodes, busd):
                 labels['l_3'] = 'excess'
                 nodes.append(
                     solph.Sink(label=oh.Label(
-                        labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4']),
+                        labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                         inputs={busd[l_bus]: solph.Flow(variable_costs=b['excess costs'])}))
 
             if b['shortage']:
                 labels['l_3'] = 'shortage'
                 nodes.append(
                     solph.Source(label=oh.Label(
-                        labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4']),
+                        labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                         outputs={busd[l_bus]: solph.Flow(variable_costs=b['shortage costs'])}))
 
     return nodes, busd
@@ -159,10 +160,10 @@ def add_sources(on, it, c, labels, nodes, busd):
         nodes.append(
             solph.Source(
                 label=oh.Label(
-                    labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4']),
+                    labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                 outputs={
                     busd[(labels['l_1'], cs['label_2'], 'bus',
-                          labels['l_4'])]: solph.Flow(**outflow_args)}))
+                          labels['l_4'], labels['l_5'])]: solph.Flow(**outflow_args)}))
 
     return nodes
 
@@ -200,9 +201,9 @@ def add_demand(it, labels, series, nodes, busd):
         # create
         nodes.append(
             solph.Sink(label=oh.Label(
-                labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4']),
+                labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                 inputs={busd[(labels['l_1'], labels['l_2'], 'bus',
-                              labels['l_4'])]: solph.Flow(**inflow_args)}))
+                              labels['l_4'], labels['l_5'])]: solph.Flow(**inflow_args)}))
 
     return nodes
 
@@ -251,7 +252,7 @@ def add_transformer(it, labels, nodes, busd):
                 nodes.append(
                     solph.Transformer(
                         label=oh.Label(
-                            labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4']),
+                            labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                         inputs={b_in_1: solph.Flow()},
                         outputs={b_out_1: solph.Flow(
                             variable_costs=t['variable_costs'],
@@ -275,7 +276,7 @@ def add_transformer(it, labels, nodes, busd):
                 nodes.append(
                     solph.Transformer(
                         label=oh.Label(labels['l_1'], labels['l_2'], labels['l_3'],
-                                       labels['l_4']),
+                                       labels['l_4'], labels['l_5']),
                         inputs={b_in_1: solph.Flow()},
                         outputs={b_out_1: solph.Flow(
                             nominal_value=t['installed'],
@@ -309,8 +310,8 @@ def add_storage(it, labels, nodes, busd):
 
     for _, s in it.iterrows():
 
-        label_storage = oh.Label(labels['l_1'], s['bus'], s['label'], labels['l_4'])
-        label_bus = busd[(labels['l_1'], s['bus'], 'bus', labels['l_4'])]
+        label_storage = oh.Label(labels['l_1'], s['bus'], s['label'], labels['l_4'], labels['l_5'])
+        label_bus = busd[(labels['l_1'], s['bus'], 'bus', labels['l_4'], labels['l_5'])]
 
         if s['invest']:
 
@@ -392,7 +393,7 @@ def add_heatpipes(it, labels, bidirectional, length, b_in, b_out, nodes):
 
         nodes.append(oh.HeatPipeline(
             label=oh.Label(labels['l_1'], labels['l_2'],
-                           labels['l_3'], labels['l_4']),
+                           labels['l_3'], labels['l_4'], labels['l_5']),
             inputs={b_in: solph.Flow(**flow_bi_args)},
             outputs={b_out: solph.Flow(
                 nominal_value=None,
@@ -451,7 +452,7 @@ def add_heatpipes_exist(pipes, labels, gd, q, b_in, b_out, nodes):
 
     nodes.append(oh.HeatPipeline(
         label=oh.Label(labels['l_1'], labels['l_2'],
-                       labels['l_3'], labels['l_4']),
+                       labels['l_3'], labels['l_4'], labels['l_5']),
         inputs={b_in: solph.Flow(**flow_bi_args)},
         outputs={b_out: solph.Flow(
             nominal_value=q['capacity'],
