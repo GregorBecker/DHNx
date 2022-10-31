@@ -225,6 +225,9 @@ class OemofInvestOptimizationModel(InvestOptimizationModel):
         pipes = self.invest_options['network']['pipes']
         self.invest_options['network']['pipes'] = clean_df(pipes)
 
+        pipes_houses = self.invest_options['network']['pipes_houses']
+        self.invest_options['network']['pipes_houses'] = clean_df(pipes_houses)
+
         for node_typ in ['consumers', 'producers']:
             for k, v in self.invest_options[node_typ].items():
                 self.invest_options[node_typ][k] = clean_df(v)

@@ -68,6 +68,7 @@ def add_nodes_dhs(opti_network, gd, nodes, busd, label_5):
     for p, q in opti_network.thermal_network.components['pipes'].iterrows():
 
         pipe_data = opti_network.invest_options['network']['pipes']
+        pipe_data_houses = opti_network.invest_options['network']['pipes_houses']
 
         d_labels['l_1'] = 'infrastructure'
         d_labels['l_2'] = 'heat'
@@ -145,7 +146,7 @@ def add_nodes_dhs(opti_network, gd, nodes, busd, label_5):
                 d_labels['l_4'] = start + '-' + end
 
                 nodes = ac.add_heatpipes(
-                    pipe_data, d_labels, False, q['length'], b_in, b_out,
+                    pipe_data_houses, d_labels, False, q['length'], b_in, b_out,
                     nodes)
 
             elif q['from_node'].split('-')[0] == "consumers":
