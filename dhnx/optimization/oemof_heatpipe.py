@@ -15,9 +15,9 @@ import warnings
 from collections import namedtuple
 
 from oemof.solph import Investment
-from oemof.solph.network import Transformer
-from oemof.solph.plumbing import sequence
-from pyomo.core.base.block import SimpleBlock
+from oemof.solph.components import Transformer
+from oemof.solph import sequence
+from pyomo.core.base.block import ScalarBlock
 from pyomo.environ import Constraint
 from pyomo.environ import NonNegativeReals
 from pyomo.environ import Set
@@ -68,9 +68,11 @@ class HeatPipeline(Transformer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.heat_loss_factor = sequence(kwargs.get('heat_loss_factor', 0))
-        self.heat_loss_factor_fix = sequence(kwargs.get(
+        
+        custom_attributes = kwargs.get("custom_attributes", 0)
+        self.heat_loss_factor = sequence(custom_attributes.get(
+            'heat_loss_factor', 0))
+        self.heat_loss_factor_fix = sequence(custom_attributes.get(
             'heat_loss_factor_fix', 0))
 
         self._invest_group = False
@@ -148,7 +150,7 @@ class HeatPipeline(Transformer):
         return HeatPipelineBlock
 
 
-class HeatPipelineBlock(SimpleBlock):  # pylint: disable=too-many-ancestors
+class HeatPipelineBlock(ScalarBlock):  # pylint: disable=too-many-ancestors
     r"""Block representing a pipeline of a district heating system.
     :class:`~dhnx.optimization.oemof_heatpipe.HeatPipeline`
 
@@ -265,7 +267,7 @@ class HeatPipelineBlock(SimpleBlock):  # pylint: disable=too-many-ancestors
                                    rule=_relation_rule)
 
 
-class HeatPipelineInvestBlock(SimpleBlock):  # pylint: disable=too-many-ancestors
+class HeatPipelineInvestBlock(ScalarBlock):  # pylint: disable=too-many-ancestors
     r"""Block representing a pipeline of a district heating system.
     :class:`~oemof.solph.custom.HeatPipeline`
 
@@ -345,7 +347,7 @@ class HeatPipelineInvestBlock(SimpleBlock):  # pylint: disable=too-many-ancestor
             """
             expr = 0
             expr += - block.heat_loss[n, t]
-            expr += n.heat_loss_factor[t] * m.InvestmentFlow.invest[n, list(n.outputs.keys())[0]]
+            expr += n.heat_loss_factor[t] * m.InvestmentFlowBlock.invest[n, list(n.outputs.keys())[0]]
             expr += n.heat_loss_factor_fix[t]
             return expr == 0
         self.heat_loss_equation_convex = Constraint(
@@ -357,7 +359,7 @@ class HeatPipelineInvestBlock(SimpleBlock):  # pylint: disable=too-many-ancestor
             """
             expr = 0
             expr += - block.heat_loss[n, t]
-            expr += n.heat_loss_factor[t] * m.InvestmentFlow.invest[n, list(n.outputs.keys())[0]]
+            expr += n.heat_loss_factor[t] * m.InvestmentFlowBlock.invest[n, list(n.outputs.keys())[0]]
             expr += n.heat_loss_factor_fix[t] * \
                 m.InvestmentFlow.invest_status[n, list(n.outputs.keys())[0]]
             return expr == 0
@@ -404,7 +406,7 @@ class HeatPipelineInvestBlock(SimpleBlock):  # pylint: disable=too-many-ancestor
             i = list(n.inputs.keys())[0]
             o = list(n.outputs.keys())[0]
 
-            expr = (m.InvestmentFlow.invest[i, n] == m.InvestmentFlow.invest[n, o])
+            expr = (m.InvestmentFlowBlock.invest[i, n] == m.InvestmentFlowBlock.invest[n, o])
             return expr
         self.inflow_outflow_invest_coupling = Constraint(
             self.INVESTHEATPIPES, rule=_inflow_outflow_invest_coupling_rule)

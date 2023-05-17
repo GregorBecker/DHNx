@@ -71,14 +71,14 @@ def add_buses(it, labels, nodes, busd):
             if b['excess']:
                 labels['l_3'] = 'excess'
                 nodes.append(
-                    solph.Sink(label=oh.Label(
+                    solph.components.Sink(label=oh.Label(
                         labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                         inputs={busd[l_bus]: solph.Flow(variable_costs=b['excess costs'])}))
 
             if b['shortage']:
                 labels['l_3'] = 'shortage'
                 nodes.append(
-                    solph.Source(label=oh.Label(
+                    solph.components.Source(label=oh.Label(
                         labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                         outputs={busd[l_bus]: solph.Flow(variable_costs=b['shortage costs'])}))
 
@@ -158,7 +158,7 @@ def add_sources(on, it, c, labels, nodes, busd):
                     outflow_args[col.split('.')[1]] = ts[col].values
 
         nodes.append(
-            solph.Source(
+            solph.components.Source(
                 label=oh.Label(
                     labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                 outputs={
@@ -200,7 +200,7 @@ def add_demand(it, labels, series, nodes, busd):
 
         # create
         nodes.append(
-            solph.Sink(label=oh.Label(
+            solph.components.Sink(label=oh.Label(
                 labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                 inputs={busd[(labels['l_1'], labels['l_2'], 'bus',
                               labels['l_4'], labels['l_5'])]: solph.Flow(**inflow_args)}))
@@ -250,7 +250,7 @@ def add_transformer(it, labels, nodes, busd):
 
                 # create
                 nodes.append(
-                    solph.Transformer(
+                    solph.components.Transformer(
                         label=oh.Label(
                             labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
                         inputs={b_in_1: solph.Flow()},
@@ -274,7 +274,7 @@ def add_transformer(it, labels, nodes, busd):
                     #             col]
 
                 nodes.append(
-                    solph.Transformer(
+                    solph.components.Transformer(
                         label=oh.Label(labels['l_1'], labels['l_2'], labels['l_3'],
                                        labels['l_4'], labels['l_5']),
                         inputs={b_in_1: solph.Flow()},
@@ -388,8 +388,8 @@ def add_heatpipes(it, labels, bidirectional, length, b_in, b_out, nodes):
 
         # bidirectional heatpipelines yes or no
         flow_bi_args = {
-            'bidirectional': True, 'min': -1}\
-            if bidirectional else {}
+            "custom_attributes": {'bidirectional': True, 'min': -1}\
+            if bidirectional else {}}
 
         nodes.append(oh.HeatPipeline(
             label=oh.Label(labels['l_1'], labels['l_2'],
@@ -402,8 +402,9 @@ def add_heatpipes(it, labels, bidirectional, length, b_in, b_out, nodes):
                     ep_costs=epc_p, maximum=t['cap_max'],
                     minimum=t['cap_min'], nonconvex=nc, offset=epc_fix,
                 ))},
-            heat_loss_factor=t['l_factor'] * length,
-            heat_loss_factor_fix=t['l_factor_fix'] * length,
+            custom_attributes={
+                "heat_loss_factor": t['l_factor'] * length,
+                "heat_loss_factor_fix": t['l_factor_fix'] * length},
         ))
 
     return nodes
@@ -445,8 +446,8 @@ def add_heatpipes_exist(pipes, labels, gd, q, b_in, b_out, nodes):
     hlff = t['l_factor_fix'] * q['length']
 
     flow_bi_args = {
-        'bidirectional': True, 'min': -1} \
-        if gd['bidirectional_pipes'] else {}
+        "custom_attributes": {'bidirectional': True, 'min': -1} \
+        if gd['bidirectional_pipes'] else {}}
 
     outflow_args = {'nonconvex': solph.NonConvex()} if t['nonconvex'] else {}
 
@@ -459,8 +460,9 @@ def add_heatpipes_exist(pipes, labels, gd, q, b_in, b_out, nodes):
             **flow_bi_args,
             **outflow_args,
         )},
-        heat_loss_factor=hlf,
-        heat_loss_factor_fix=hlff,
+        custom_attributes={
+            "heat_loss_factor": hlf,
+            "heat_loss_factor_fix": hlff},
     ))
 
     return nodes
