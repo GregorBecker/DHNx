@@ -212,7 +212,7 @@ def add_nodes_dhs(opti_network, gd, nodes, busd, label_5):
     return nodes, busd
 
 
-def add_nodes_houses(opti_network, nodes, busd, label_1):
+def add_nodes_houses(opti_network, nodes, busd, label_1, label_5):
     """
     For each *consumers*/*producers* of the *ThermalNetwork* of the
     *OemofInvestOptimisationModel*, the oemof-solph components for the *consumers*/*producers*
