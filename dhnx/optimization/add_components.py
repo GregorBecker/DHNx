@@ -11,17 +11,18 @@ available from its original location:
 SPDX-License-Identifier: MIT
 """
 
-
 import oemof.solph as solph
+from oemof.network import Transformer
 
 import dhnx.optimization.oemof_heatpipe as oh
 
 
 def add_buses(it, labels, nodes, busd):
     """
-    This function initialises the oemof.solph.Bus classes of the energysystem based on the given
-    tabular information. Additionally, a sink or a source can be added to every bus and costs for
-    this source (shortage) or sink (excess) can be defined.
+    This function initialises the oemof.solph.Bus classes of the energysystem
+    based on the given tabular information. Additionally, a sink or a source
+    can be added to every bus and costs for this source (shortage) or sink
+    (excess) can be defined.
 
     The table must be given as follows:
 
@@ -29,11 +30,11 @@ def add_buses(it, labels, nodes, busd):
 
     .. table:: Example for table of *Buses*
 
-        +---------+--------+--------+----------+----------------+--------------+
-        | label_2 | active | excess | shortage | shortage costs | excess costs |
-        +=========+========+========+==========+================+==============+
-        | heat    | 1      | 0      | 0        | 99999          | 99999        |
-        +---------+--------+--------+----------+----------------+--------------+
+        +---------+--------+--------+----------+----------------+-------------+
+        | label_2 | active | excess | shortage | shortage costs | excess costs|
+        +=========+========+========+==========+================+=============+
+        | heat    | 1      | 0      | 0        | 99999          | 99999       |
+        +---------+--------+--------+----------+----------------+-------------+
 
     Parameters
     ----------
@@ -55,8 +56,8 @@ def add_buses(it, labels, nodes, busd):
 
         labels['l_3'] = 'bus'
         labels['l_2'] = b['label_2']
-        # TODO add 5th label
-        l_bus = oh.Label(labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5'])
+        l_bus = oh.Label(labels['l_1'], labels['l_2'], labels['l_3'],
+                         labels['l_4'], labels['l_5'])
 
         # check if bus already exists (due to infrastructure)
         if l_bus in busd:
@@ -87,10 +88,12 @@ def add_buses(it, labels, nodes, busd):
 
 def add_sources(on, it, c, labels, nodes, busd):
     """
-    The oemof.solph.Source components for the producers and consumers are initialised based on the
-    given tabular information of the investment_options of the OemofInvestOptimizationModel.
-    Time-series can also be used as attribute values for the outflow of the Source.
-    Therefore, a table with the filename 'source_timeseries' must be given.
+    The oemof.solph.Source components for the producers and consumers are
+    initialised based on the given tabular information of the
+    investment_options of the OemofInvestOptimizationModel.
+    Time-series can also be used as attribute values for the outflow of the
+    Source. Therefore, a table with the filename 'source_timeseries' must be
+    given.
 
     Parameters
     ----------
@@ -136,23 +139,28 @@ def add_sources(on, it, c, labels, nodes, busd):
         # specific flow attributes
         # e.g. check for heat (label 2)
         # e.g. check for source (label 3)
-        spec_attr = [x for x in list(on.thermal_network.components[labels['l_1']].columns)
-                     if x.split('.')[-1] in on.oemof_flow_attr
-                     if x.split('.')[0] == labels['l_2']
-                     if x.split('.')[1] == labels['l_3']]
+        spec_attr = [
+            x for x in list(
+                on.thermal_network.components[labels['l_1']].columns)
+            if x.split('.')[-1] in on.oemof_flow_attr
+            if x.split('.')[0] == labels['l_2']
+            if x.split('.')[1] == labels['l_3']
+        ]
 
         for sa in spec_attr:
             if sa.split('.')[-1] in outflow_args.keys():
                 print(
-                    'General attribute <{}> of Label 2 <{}> and Label 3 <{}> (value: {}) will '
-                    'be replaced by specific data. New value for <{}>: {}'.format(
+                    'General attribute <{}> of Label 2 <{}> and '
+                    'Label 3 <{}> (value: {}) will '
+                    'be replaced by specific data. New value for <{}>: {}'
+                    ''.format(
                         sa.split('.')[-1], labels['l_2'], labels['l_3'],
                         outflow_args[sa.split('.')[-1]], labels['l_4'], c[sa]))
             outflow_args[sa.split('.')[-1]] = c[sa]
 
         # add timeseries data if present
         if ts_status:
-            ts_key = labels['l_4'].split('-')[1] + '_' + labels['l_2']
+            ts_key = labels['l_4'].split('-', 1)[1] + '_' + labels['l_2']
             for col in ts.columns.values:
                 if col.split('.')[0] == ts_key:
                     outflow_args[col.split('.')[1]] = ts[col].values
@@ -160,10 +168,13 @@ def add_sources(on, it, c, labels, nodes, busd):
         nodes.append(
             solph.components.Source(
                 label=oh.Label(
-                    labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
+                    labels['l_1'], labels['l_2'], labels['l_3'],
+                    labels['l_4'], labels['l_5']
+                ),
                 outputs={
                     busd[(labels['l_1'], cs['label_2'], 'bus',
-                          labels['l_4'], labels['l_5'])]: solph.Flow(**outflow_args)}))
+                          labels['l_4'], labels['l_5'])]:
+                    solph.Flow(**outflow_args)}))
 
     return nodes
 
@@ -196,23 +207,25 @@ def add_demand(it, labels, series, nodes, busd):
         # set static inflow values
         inflow_args = {'nominal_value': de['nominal_value'],
                        'fix': series['heat_flow'][
-                           labels['l_4'].split('-')[1]].values}
+                           labels['l_4'].split('-', 1)[1]].values}
 
         # create
         nodes.append(
             solph.components.Sink(label=oh.Label(
-                labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
+                labels['l_1'], labels['l_2'], labels['l_3'],
+                labels['l_4'], labels['l_5']),
                 inputs={busd[(labels['l_1'], labels['l_2'], 'bus',
-                              labels['l_4'], labels['l_5'])]: solph.Flow(**inflow_args)}))
+                              labels['l_4'], labels['l_5'])]:
+                        solph.Flow(**inflow_args)}))
 
     return nodes
 
 
 def add_transformer(it, labels, nodes, busd):
-    """Adds oemof.solph.Transformer objects to the list of components.
+    """Adds oemof.network.Transformer objects to the list of components.
 
-    If attribute `invest` is *True*, an `Investment` attribute is added to the outflow of the
-    Transformer.
+    If attribute `invest` is *True*, an `Investment` attribute is added to
+    the outflow of the Transformer.
 
     Parameters
     ----------
@@ -237,9 +250,10 @@ def add_transformer(it, labels, nodes, busd):
         # Transformer with 1 Input and 1 Output
         if t['type'] == "1-in_1-out":
 
-            b_in_1 = busd[(labels['l_1'], t['in_1'], 'bus', labels['l_4'])]
+            b_in_1 = busd[(labels['l_1'], t['in_1'], 'bus', labels['l_4'],
+                           labels['l_5'])]
             b_out_1 = busd[(labels['l_1'], t['out_1'], 'bus',
-                            labels['l_4'])]
+                            labels['l_4'], labels['l_5'])]
 
             if t['invest']:
 
@@ -250,9 +264,10 @@ def add_transformer(it, labels, nodes, busd):
 
                 # create
                 nodes.append(
-                    solph.components.Transformer(
+                    Transformer(
                         label=oh.Label(
-                            labels['l_1'], labels['l_2'], labels['l_3'], labels['l_4'], labels['l_5']),
+                            labels['l_1'], labels['l_2'], labels['l_3'],
+                            labels['l_4'], labels['l_5']),
                         inputs={b_in_1: solph.Flow()},
                         outputs={b_out_1: solph.Flow(
                             variable_costs=t['variable_costs'],
@@ -274,7 +289,7 @@ def add_transformer(it, labels, nodes, busd):
                     #             col]
 
                 nodes.append(
-                    solph.components.Transformer(
+                    Transformer(
                         label=oh.Label(labels['l_1'], labels['l_2'], labels['l_3'],
                                        labels['l_4'], labels['l_5']),
                         inputs={b_in_1: solph.Flow()},
@@ -288,9 +303,10 @@ def add_transformer(it, labels, nodes, busd):
 
 
 def add_storage(it, labels, nodes, busd):
-    """Adds oemof.solph.GenericStorage objects to the list of components.
+    """Adds oemof.solph.components.GenericStorage objects to the list of components.
 
-    If attribute `invest` is *True*, the investment version of the Storage is created.
+    If attribute `invest` is *True*, the investment version of the Storage is
+    created.
 
     Parameters
     ----------
@@ -310,8 +326,12 @@ def add_storage(it, labels, nodes, busd):
 
     for _, s in it.iterrows():
 
-        label_storage = oh.Label(labels['l_1'], s['bus'], s['label'], labels['l_4'], labels['l_5'])
-        label_bus = busd[(labels['l_1'], s['bus'], 'bus', labels['l_4'], labels['l_5'])]
+        label_storage = oh.Label(
+            labels['l_1'], s['bus'], s['label'], labels['l_4'], labels['l_5']
+        )
+
+        label_bus = busd[(labels['l_1'], s['bus'], 'bus', labels['l_4'],
+                          labels['l_5'])]
 
         if s['invest']:
 
@@ -351,7 +371,8 @@ def add_storage(it, labels, nodes, busd):
 
 def add_heatpipes(it, labels, bidirectional, length, b_in, b_out, nodes):
     """
-    Adds *HeatPipeline* objects with *Investment* attribute to the list of oemof.solph components.
+    Adds *HeatPipeline* objects with *Investment* attribute to the list of
+    oemof.solph components.
 
     Parameters
     ----------
@@ -388,13 +409,16 @@ def add_heatpipes(it, labels, bidirectional, length, b_in, b_out, nodes):
 
         # bidirectional heatpipelines yes or no
         flow_bi_args = {
-            "custom_attributes": {'bidirectional': True, 'min': -1}\
-            if bidirectional else {}}
+            'bidirectional': True, 'min': -1}\
+            if bidirectional else {}
 
         nodes.append(oh.HeatPipeline(
             label=oh.Label(labels['l_1'], labels['l_2'],
                            labels['l_3'], labels['l_4'], labels['l_5']),
-            inputs={b_in: solph.Flow(**flow_bi_args)},
+            inputs={b_in: solph.Flow(
+                investment=solph.Investment(),
+                **flow_bi_args,
+            )},
             outputs={b_out: solph.Flow(
                 nominal_value=None,
                 **flow_bi_args,
@@ -402,9 +426,8 @@ def add_heatpipes(it, labels, bidirectional, length, b_in, b_out, nodes):
                     ep_costs=epc_p, maximum=t['cap_max'],
                     minimum=t['cap_min'], nonconvex=nc, offset=epc_fix,
                 ))},
-            custom_attributes={
-                "heat_loss_factor": t['l_factor'] * length,
-                "heat_loss_factor_fix": t['l_factor_fix'] * length},
+            heat_loss_factor=t['l_factor'] * length,
+            heat_loss_factor_fix=t['l_factor_fix'] * length,
         ))
 
     return nodes
@@ -446,23 +469,25 @@ def add_heatpipes_exist(pipes, labels, gd, q, b_in, b_out, nodes):
     hlff = t['l_factor_fix'] * q['length']
 
     flow_bi_args = {
-        "custom_attributes": {'bidirectional': True, 'min': -1} \
-        if gd['bidirectional_pipes'] else {}}
+        'bidirectional': True, 'min': -1} \
+        if gd['bidirectional_pipes'] else {}
 
     outflow_args = {'nonconvex': solph.NonConvex()} if t['nonconvex'] else {}
 
     nodes.append(oh.HeatPipeline(
         label=oh.Label(labels['l_1'], labels['l_2'],
                        labels['l_3'], labels['l_4'], labels['l_5']),
-        inputs={b_in: solph.Flow(**flow_bi_args)},
+        inputs={b_in: solph.Flow(
+            nominal_value=q['capacity'],
+            **flow_bi_args,
+        )},
         outputs={b_out: solph.Flow(
             nominal_value=q['capacity'],
             **flow_bi_args,
             **outflow_args,
         )},
-        custom_attributes={
-            "heat_loss_factor": hlf,
-            "heat_loss_factor_fix": hlff},
+        heat_loss_factor=hlf,
+        heat_loss_factor_fix=hlff,
     ))
 
     return nodes

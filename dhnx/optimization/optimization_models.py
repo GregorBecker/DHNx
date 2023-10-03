@@ -145,26 +145,26 @@ class OemofInvestOptimizationModel(InvestOptimizationModel):
 
         for p, q in self.thermal_network.components['pipes'].iterrows():
 
-            if (q['from_node'].split('-')[0] == "consumers") and (
-                    q['to_node'].split('-')[0] == "consumers"):
+            if (q['from_node'].split('-', 1)[0] == "consumers") and (
+                    q['to_node'].split('-', 1)[0] == "consumers"):
 
                 raise ValueError(
                     ""
                     "Pipe id {} goes from consumer to consumer. This is not "
                     "allowed!".format(p))
 
-            if (q['from_node'].split('-')[0] == "producers") and (
-                    q['to_node'].split('-')[0] == "producers"):
+            if (q['from_node'].split('-', 1)[0] == "producers") and (
+                    q['to_node'].split('-', 1)[0] == "producers"):
 
                 raise ValueError(
                     ""
                     "Pipe id {} goes from producers to producers. "
                     "This is not allowed!".format(p))
 
-            if ((q['from_node'].split('-')[0] == "producers") and (
-                    q['to_node'].split('-')[0] == "consumers")) or ((
-                        q['from_node'].split('-')[0] == "consumers") and (
-                            q['to_node'].split('-')[0] == "producers")):
+            if ((q['from_node'].split('-', 1)[0] == "producers") and (
+                    q['to_node'].split('-', 1)[0] == "consumers")) or ((
+                        q['from_node'].split('-', 1)[0] == "consumers") and (
+                            q['to_node'].split('-', 1)[0] == "producers")):
 
                 raise ValueError(
                     ""
@@ -172,19 +172,20 @@ class OemofInvestOptimizationModel(InvestOptimizationModel):
                     "to consumers, or vice versa. This is not allowed!"
                     "".format(p))
 
-            if (q['from_node'].split('-')[0] == "forks") and (
-                    q['to_node'].split('-')[0] == "consumers"):
+            if (q['from_node'].split('-', 1)[0] == "forks") and (
+                    q['to_node'].split('-', 1)[0] == "consumers"):
 
-                cons_id = q['to_node'].split('-')[1]
+                cons_id = q['to_node'].split('-', 1)[1]
 
                 if cons_id not in ids_consumers:
                     raise ValueError(
                         ""
-                        "The consumer of pipe id {} does not exist!".format(p))
+                        "The consumer {} of pipe id {} does not exist!"
+                        .format(cons_id, p))
 
         pipe_to_cons_ids = list(self.thermal_network.components['pipes']['to_node'].values)
-        pipe_to_cons_ids = [x.split('-')[1] for x in pipe_to_cons_ids
-                            if x.split('-')[0] == 'consumers']
+        pipe_to_cons_ids = [x.split('-', 1)[1] for x in pipe_to_cons_ids
+                            if x.split('-', 1)[0] == 'consumers']
 
         for id in list(self.thermal_network.components['consumers'].index):
             if id not in pipe_to_cons_ids:
@@ -224,9 +225,6 @@ class OemofInvestOptimizationModel(InvestOptimizationModel):
 
         pipes = self.invest_options['network']['pipes']
         self.invest_options['network']['pipes'] = clean_df(pipes)
-
-        pipes_houses = self.invest_options['network']['pipes_houses']
-        self.invest_options['network']['pipes_houses'] = clean_df(pipes_houses)
 
         for node_typ in ['consumers', 'producers']:
             for k, v in self.invest_options[node_typ].items():
@@ -346,8 +344,10 @@ class OemofInvestOptimizationModel(InvestOptimizationModel):
 
         logging.info('Initialize the energy system')
 
-        self.es = solph.EnergySystem(timeindex=date_time_index,
-                                     infer_last_interval=False)
+        self.es = solph.EnergySystem(
+            timeindex=date_time_index,
+            infer_last_interval=True,
+        )
 
         logging.info('Create oemof objects')
 

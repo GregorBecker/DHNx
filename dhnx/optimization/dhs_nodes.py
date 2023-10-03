@@ -66,9 +66,10 @@ def add_nodes_dhs(opti_network, gd, nodes, busd, label_5):
 
     # add heatpipes for all lines
     for p, q in opti_network.thermal_network.components['pipes'].iterrows():
-
+    
         pipe_data = opti_network.invest_options['network']['pipes']
-        pipe_data_houses = opti_network.invest_options['network']['pipes_houses']
+        pipe_data_houses = opti_network.invest_options['network'][
+            'pipes_houses']
 
         d_labels['l_1'] = 'infrastructure'
         d_labels['l_2'] = 'heat'
@@ -90,7 +91,7 @@ def add_nodes_dhs(opti_network, gd, nodes, busd, label_5):
                 b_in = busd[(l_1_in, d_labels['l_2'], 'bus', start)]
                 b_out = busd[(l_1_out, d_labels['l_2'], 'bus', end)]
                 d_labels['l_4'] = start + '-' + end
-                nodes = ac.add_heatpipes_exist(pipe_data, d_labels, gd, q, b_in, b_out,
+                nodes = ac.add_heatpipes_exist(pipe_data_houses, d_labels, gd, q, b_in, b_out,
                                                nodes)
 
             elif (typ_from == 'consumers') and (typ_to == 'forks'):
@@ -146,7 +147,7 @@ def add_nodes_dhs(opti_network, gd, nodes, busd, label_5):
                 d_labels['l_4'] = start + '-' + end
 
                 nodes = ac.add_heatpipes(
-                    pipe_data_houses, d_labels, False, q['length'], b_in, b_out,
+                    pipe_data, d_labels, False, q['length'], b_in, b_out,
                     nodes)
 
             elif q['from_node'].split('-')[0] == "consumers":
@@ -211,7 +212,7 @@ def add_nodes_dhs(opti_network, gd, nodes, busd, label_5):
     return nodes, busd
 
 
-def add_nodes_houses(opti_network, nodes, busd, label_1, label_5):
+def add_nodes_houses(opti_network, nodes, busd, label_1):
     """
     For each *consumers*/*producers* of the *ThermalNetwork* of the
     *OemofInvestOptimisationModel*, the oemof-solph components for the *consumers*/*producers*
@@ -262,6 +263,7 @@ def add_nodes_houses(opti_network, nodes, busd, label_1, label_5):
         d_labels['l_1'] = label_1
         d_labels['l_4'] = label_1 + '-' + str(r)
         d_labels['l_5'] = label_5
+
         # add buses first, because other classes need to have them already
         nodes, busd = ac.add_buses(gen_data['bus'],
                                    d_labels, nodes, busd)
