@@ -409,25 +409,25 @@ def add_heatpipes(it, labels, bidirectional, length, b_in, b_out, nodes):
 
         # bidirectional heatpipelines yes or no
         flow_bi_args = {
-            'bidirectional': True, 'min': -1}\
+            'bidirectional': True, "min": -1}\
             if bidirectional else {}
 
         nodes.append(oh.HeatPipeline(
             label=oh.Label(labels['l_1'], labels['l_2'],
                            labels['l_3'], labels['l_4'], labels['l_5']),
             inputs={b_in: solph.Flow(
-                investment=solph.Investment(),
+                nominal_value=solph.Investment(),
                 **flow_bi_args,
             )},
             outputs={b_out: solph.Flow(
-                nominal_value=None,
                 **flow_bi_args,
-                investment=solph.Investment(
+                nominal_value=solph.Investment(
                     ep_costs=epc_p, maximum=t['cap_max'],
                     minimum=t['cap_min'], nonconvex=nc, offset=epc_fix,
                 ))},
-            heat_loss_factor=t['l_factor'] * length,
-            heat_loss_factor_fix=t['l_factor_fix'] * length,
+            custom_properties={
+                "heat_loss_factor": t['l_factor'] * length,
+                "heat_loss_factor_fix": t['l_factor_fix'] * length},
         ))
 
     return nodes

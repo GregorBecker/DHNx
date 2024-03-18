@@ -14,7 +14,7 @@ SPDX-License-Identifier: MIT
 import warnings
 from collections import namedtuple
 
-from oemof.network import Transformer
+from oemof.network import Node
 from oemof.solph import Investment
 from oemof.solph._plumbing import sequence
 from pyomo.core.base.block import ScalarBlock
@@ -32,7 +32,7 @@ class Label(namedtuple('solph_label', ['tag1', 'tag2', 'tag3', 'tag4', 'tag5']))
         return '_'.join(map(str, self._asdict().values()))
 
 
-class HeatPipeline(Transformer):
+class HeatPipeline(Node):
     r"""A HeatPipeline represent a Pipeline in a district heating system.
     This is done by a Transformer with a constant energy loss independent of
     actual power, but dependent on the nominal power and the length parameter.
@@ -68,33 +68,45 @@ class HeatPipeline(Transformer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.heat_loss_factor = sequence(kwargs.get('heat_loss_factor', 0))
-        self.heat_loss_factor_fix = sequence(kwargs.get(
+        
+        # extract heat loss factors from kwargs
+        self.heat_loss_factor = sequence(kwargs["custom_properties"].get(
+                'heat_loss_factor', 0))
+        self.heat_loss_factor_fix = sequence(kwargs["custom_properties"].get(
             'heat_loss_factor_fix', 0))
 
         self._invest_group = False
         self._nonconvex_group = False
         self._demand_group = False
 
+        # catch pipes with more than one input and/or two outputs since
+        # this case is not allowed
         if len(self.inputs) > 1 or len(self.outputs) > 2:
             if len(self.outputs) == 2:
                 self._demand_group = True
             else:
                 raise ValueError("Heatpipe must not have more than"
                                  " one input and two outputs!")
-
+        
+        # catch pipes with a nonconvex input flow since it is not
+        # allowed
         for f in self.inputs.values():
             if f.nonconvex is not None:
                 raise ValueError(
                     "Inputflow must not be of type NonConvexFlow!")
-
+        
+        # catch pipes with a nonconvex ouput flow and change
+        # _nonconvex_group state if one is found
         for f in self.outputs.values():
             if f.nonconvex is not None:
                 self._nonconvex_group = True
 
+        # checks if the output flow contains an investment decision
+        # and changes the _invest_group state if it is found
         self._check_flows_invest()
-
+        
+        # catch pipes with non convex flow and investment decision
+        # since it is not allowed
         if (self._nonconvex_group is True) and (self._invest_group is True):
             raise ValueError(
                 "Either an investment OR a switchable heatloss can be set"
@@ -102,7 +114,9 @@ class HeatPipeline(Transformer):
                 " Remove the NonConvexFlow or drop "
                 "the Investment attribute.")
 
+        # handling of pipes with investment decisions on output flow
         if self._invest_group is True:
+            # add investment variable on input flow
             self._set_flows()
             o = list(self.outputs.keys())[0]
             if (self.heat_loss_factor_fix[0] > 0) \
@@ -121,7 +135,7 @@ class HeatPipeline(Transformer):
         #     if isinstance(flow.investment, Investment):
         #         raise ValueError(
         #             "The investment must be defined at the Outputflow!")
-
+        
         for flow in self.outputs.values():
             if isinstance(flow.investment, Investment):
                 self._invest_group = True
@@ -144,6 +158,8 @@ class HeatPipeline(Transformer):
                 self.inputs[i].nominal_value
 
     def constraint_group(self):
+        # distiction between pipes with an investment on the output flow
+        # and pipes without investment decisions
         if self._invest_group is True:
             return HeatPipelineInvestBlock
         return HeatPipelineBlock
@@ -375,11 +391,15 @@ class HeatPipelineInvestBlock(ScalarBlock):  # pylint: disable=too-many-ancestor
             """
             expr = 0
             expr += - block.heat_loss[n, t]
+            # invest specific linear heatpipe block losses
+            # index (heatpipe label, heatpipe output bus, 0)
             expr += n.heat_loss_factor[t] * m.InvestmentFlowBlock.invest[
-                n, list(n.outputs.keys())[0]]
+                (n, list(n.outputs.keys())[0], 0)]
+            # invest specific fix heatpipe block losses
+            # index (heatpipe label, heatpipe output bus, 0)
             expr += n.heat_loss_factor_fix[t] * \
                 m.InvestmentFlowBlock.invest_status[
-                    n, list(n.outputs.keys())[0]]
+                    (n, list(n.outputs.keys())[0], 0)]
             return expr == 0
 
         self.heat_loss_equation_nonconvex = Constraint(
@@ -393,8 +413,8 @@ class HeatPipelineInvestBlock(ScalarBlock):  # pylint: disable=too-many-ancestor
             o = list(n.outputs.keys())[0]
 
             expr = 0
-            expr += - m.flow[n, o, t]
-            expr += m.flow[i, n, t]
+            expr += - m.flow[(n, o, 0, t)]
+            expr += m.flow[(i, n, 0, t)]
             expr += - block.heat_loss[n, t]
             return expr == 0
 
@@ -429,8 +449,8 @@ class HeatPipelineInvestBlock(ScalarBlock):  # pylint: disable=too-many-ancestor
             i = list(n.inputs.keys())[0]
             o = list(n.outputs.keys())[0]
 
-            expr = (m.InvestmentFlowBlock.invest[i, n]
-                    == m.InvestmentFlowBlock.invest[n, o])
+            expr = (m.InvestmentFlowBlock.invest[(i, n, 0)]
+                    == m.InvestmentFlowBlock.invest[(n, o, 0)])
             return expr
         self.inflow_outflow_invest_coupling = Constraint(
             self.INVESTHEATPIPES, rule=_inflow_outflow_invest_coupling_rule
