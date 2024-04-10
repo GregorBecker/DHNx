@@ -345,7 +345,7 @@ class HeatPipelineInvestBlock(SimpleBlock):  # pylint: disable=too-many-ancestor
             """
             expr = 0
             expr += - block.heat_loss[n, t]
-            expr += n.heat_loss_factor[t] * m.InvestmentFlow.invest[(n, list(n.outputs.keys())[0],0)]
+            expr += n.heat_loss_factor[t] * m.InvestmentFlow.invest[n, list(n.outputs.keys())[0]]
             expr += n.heat_loss_factor_fix[t]
             return expr == 0
         self.heat_loss_equation_convex = Constraint(
