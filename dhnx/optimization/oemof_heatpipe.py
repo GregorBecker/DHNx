@@ -376,7 +376,7 @@ class HeatPipelineInvestBlock(ScalarBlock):  # pylint: disable=too-many-ancestor
             expr = 0
             expr += - block.heat_loss[n, t]
             expr += n.heat_loss_factor[t] * m.InvestmentFlowBlock.invest[
-                n, list(n.outputs.keys())[0]
+                (n, list(n.outputs.keys())[0], 0)
             ]
             expr += n.heat_loss_factor_fix[t]
             return expr == 0
